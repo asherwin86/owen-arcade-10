@@ -1,0 +1,6 @@
+{
+  "name": "Arcade 10",
+  "description": "Collection of 10 classic retro and puzzle games: Snake, 2048, Minesweeper, Brick Breaker, Word Guess, Tic-Tac-Toe, Flappy Bird, Memory Cards, Connect Four, and Whack-a-Mole.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
