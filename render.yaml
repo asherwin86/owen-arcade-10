@@ -13,5 +13,5 @@ services:
     env: node # Change this to your backend runtime (node, python, docker, etc.)
     region: oregon
     plan: free
-    buildCommand: "echo 'No build needed'"
-    startCommand: "node -e \"require('http').createServer((req, res) => res.end('Arcade 10 Android App Placeholder')).listen(process.env.PORT || 3000)\""
+    buildCommand: "npm install"
+    startCommand: "npm start"
