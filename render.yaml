@@ -1,0 +1,18 @@
+# render.yaml
+# Note: This repository primarily contains a native Android application (APK).
+# Android apps are installed directly on Android devices and cannot be "hosted" 
+# or executed on Render like a web app.
+#
+# This file is provided in case you plan to add a backend API or web service 
+# (e.g., Node.js, Python, or Ktor for a global leaderboard) to this repository 
+# in the future.
+
+services:
+  - type: web
+    name: arcade-10-backend
+    env: node # Change this to your backend runtime (node, python, docker, etc.)
+    region: oregon
+    plan: free
+    # Uncomment and configure these when you add your backend code:
+    # buildCommand: npm install
+    # startCommand: npm start

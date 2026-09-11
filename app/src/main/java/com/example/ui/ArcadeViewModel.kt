@@ -9,6 +9,12 @@ import com.example.data.GameScoreRepository
 import com.example.model.GameCategory
 import com.example.model.GameInfo
 import com.example.model.GameRegistry
+import com.example.BuildConfig
+import com.example.api.RetrofitClient
+import com.example.api.GenerateContentRequest
+import com.example.api.Content
+import com.example.api.Part
+import com.example.api.GenerationConfig
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -35,12 +41,55 @@ class ArcadeViewModel(application: Application) : AndroidViewModel(application) 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _isMusicGenerating = MutableStateFlow(false)
+    val isMusicGenerating: StateFlow<Boolean> = _isMusicGenerating.asStateFlow()
+
+    private val _generatedMusicBase64 = MutableStateFlow<String?>(null)
+    val generatedMusicBase64: StateFlow<String?> = _generatedMusicBase64.asStateFlow()
+
     init {
         viewModelScope.launch {
             delay(2000) // Simulate asset loading
             _isLoading.value = false
         }
     }
+
+    fun generateHomeMusic() {
+        if (_isMusicGenerating.value) return
+        _isMusicGenerating.value = true
+        
+        viewModelScope.launch {
+            try {
+                val apiKey = BuildConfig.GEMINI_API_KEY
+                val request = GenerateContentRequest(
+                    contents = listOf(Content(
+                        parts = listOf(Part(text = "Generate a 30-second upbeat retro synthwave arcade track suitable for a retro game collection main menu."))
+                    )),
+                    generationConfig = GenerationConfig(
+                        responseModalities = listOf("AUDIO")
+                    )
+                )
+                
+                // Use lyria-3-clip-preview for short clips
+                val response = RetrofitClient.service.generateContent(
+                    model = "lyria-3-clip-preview",
+                    apiKey = apiKey,
+                    request = request
+                )
+                
+                val base64Data = response.candidates?.firstOrNull()
+                    ?.content?.parts?.firstOrNull()
+                    ?.inlineData?.data
+                    
+                _generatedMusicBase64.value = base64Data
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                _isMusicGenerating.value = false
+            }
+        }
+    }
+
 
     private val _selectedGameId = MutableStateFlow<String?>(null)
     val selectedGameId: StateFlow<String?> = _selectedGameId.asStateFlow()

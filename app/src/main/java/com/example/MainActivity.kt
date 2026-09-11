@@ -16,6 +16,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.ArcadeHomeScreen
+import com.example.audio.AudioPlayer
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 import com.example.ui.ArcadeViewModel
 import com.example.ui.components.ArcadeLoadingOverlay
 import com.example.ui.games.BrickBreakerGame
@@ -48,6 +53,24 @@ fun ArcadeApp(arcadeViewModel: ArcadeViewModel = viewModel()) {
     val selectedGameId by arcadeViewModel.selectedGameId.collectAsStateWithLifecycle()
     val highScores by arcadeViewModel.highScores.collectAsStateWithLifecycle()
     val selectedCategory by arcadeViewModel.selectedCategory.collectAsStateWithLifecycle()
+    
+    val isMusicGenerating by arcadeViewModel.isMusicGenerating.collectAsStateWithLifecycle()
+    val generatedMusicBase64 by arcadeViewModel.generatedMusicBase64.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    
+    val audioPlayer = remember { AudioPlayer(context) }
+    
+    DisposableEffect(Unit) {
+        onDispose {
+            audioPlayer.stop()
+        }
+    }
+    
+    LaunchedEffect(generatedMusicBase64) {
+        generatedMusicBase64?.let { base64 ->
+            audioPlayer.playBase64Audio(base64)
+        }
+    }
 
     if (isLoading) {
         ArcadeLoadingOverlay()
@@ -146,7 +169,8 @@ fun ArcadeApp(arcadeViewModel: ArcadeViewModel = viewModel()) {
                     selectedCategory = selectedCategory,
                     onCategorySelected = { arcadeViewModel.setCategory(it) },
                     onGameSelected = { arcadeViewModel.selectGame(it) },
-                    onPlayRandom = { arcadeViewModel.playRandomGame() }
+                    onPlayRandom = { arcadeViewModel.playRandomGame() },
+                    onGenerateMusic = { arcadeViewModel.generateHomeMusic() }
                 )
             }
         }

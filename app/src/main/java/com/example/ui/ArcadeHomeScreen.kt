@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Casino
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
@@ -63,7 +64,8 @@ fun ArcadeHomeScreen(
     selectedCategory: GameCategory,
     onCategorySelected: (GameCategory) -> Unit,
     onGameSelected: (String) -> Unit,
-    onPlayRandom: () -> Unit
+    onPlayRandom: () -> Unit,
+    onGenerateMusic: () -> Unit
 ) {
     val context = LocalContext.current
     val colors = ArcadeTheme.colors
@@ -126,27 +128,47 @@ fun ArcadeHomeScreen(
                 }
             }
 
-            // Quick Play Random button
-            Button(
-                onClick = {
-                    HapticHelper.playClick(context)
-                    onPlayRandom()
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colors.neonCyan,
-                    contentColor = Color(0xFF003730)
-                ),
-                shape = RoundedCornerShape(14.dp),
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                modifier = Modifier.testTag("random_game_button")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Casino,
-                    contentDescription = "Random Game",
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Surprise", style = textStyles.hudLabel, fontSize = 12.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Generate Music Button
+                androidx.compose.material3.IconButton(
+                    onClick = {
+                        HapticHelper.playClick(context)
+                        onGenerateMusic()
+                    },
+                    modifier = Modifier
+                        .background(colors.neonPurple, RoundedCornerShape(14.dp))
+                        .size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MusicNote,
+                        contentDescription = "Generate Music",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                // Quick Play Random button
+                Button(
+                    onClick = {
+                        HapticHelper.playClick(context)
+                        onPlayRandom()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colors.neonCyan,
+                        contentColor = Color(0xFF003730)
+                    ),
+                    shape = RoundedCornerShape(14.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                    modifier = Modifier.testTag("random_game_button").height(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Casino,
+                        contentDescription = "Random Game",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Surprise", style = textStyles.hudLabel, fontSize = 12.sp)
+                }
             }
         }
 
