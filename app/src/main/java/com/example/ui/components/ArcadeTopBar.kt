@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -28,11 +29,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.GameInfo
+import com.example.ui.LocalLeaderboardController
 import com.example.ui.theme.ArcadeTheme
 
 @Composable
@@ -46,6 +48,10 @@ fun ArcadeGameHeader(
 ) {
     val colors = ArcadeTheme.colors
     val textStyles = ArcadeTheme.textStyles
+    val context = LocalContext.current
+    val leaderboardController = LocalLeaderboardController.current
+    val globalTopScore = leaderboardController.topScoresByGame[game.id]?.firstOrNull()?.score ?: 0
+    val displayedHigh = maxOf(highScore, globalTopScore)
 
     Column(
         modifier = modifier
@@ -75,18 +81,18 @@ fun ArcadeGameHeader(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(10.dp))
 
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = game.iconEmoji,
-                            fontSize = 22.sp,
+                            fontSize = 20.sp,
                             modifier = Modifier.padding(end = 6.dp)
                         )
                         Text(
                             text = game.title,
-                            style = textStyles.gameHeaderTitle,
+                            style = textStyles.gameHeaderTitle.copy(fontSize = 16.sp),
                             color = MaterialTheme.colorScheme.onBackground
                         )
                     }
@@ -105,10 +111,10 @@ fun ArcadeGameHeader(
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = colors.surfaceCard),
                     border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
-                    modifier = Modifier.padding(end = 8.dp)
+                    modifier = Modifier.padding(end = 6.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(horizontalAlignment = Alignment.End) {
@@ -123,22 +129,22 @@ fun ArcadeGameHeader(
                                 color = colors.neonCyan
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Box(
                             modifier = Modifier
                                 .width(1.dp)
                                 .height(22.dp)
                                 .background(colors.border)
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
-                                text = "HIGH",
+                                text = "TOP",
                                 style = textStyles.hudLabel,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "$highScore",
+                                text = "$displayedHigh",
                                 style = textStyles.hudScore,
                                 color = colors.scoreGold
                             )
@@ -147,9 +153,29 @@ fun ArcadeGameHeader(
                 }
 
                 IconButton(
+                    onClick = {
+                        HapticHelper.playClick(context)
+                        leaderboardController.onOpenGameLeaderboardModal(game.id)
+                    },
+                    modifier = Modifier
+                        .padding(end = 6.dp)
+                        .size(40.dp)
+                        .background(colors.surfaceCard, CircleShape)
+                        .border(1.dp, colors.scoreGold.copy(alpha = 0.6f), CircleShape)
+                        .testTag("game_leaderboard_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.EmojiEvents,
+                        contentDescription = "Top 10 Leaderboard",
+                        tint = colors.scoreGold,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                IconButton(
                     onClick = onRestart,
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(40.dp)
                         .background(colors.surfaceCard, CircleShape)
                         .border(1.dp, colors.border, CircleShape)
                         .testTag("game_restart_button")
@@ -157,7 +183,8 @@ fun ArcadeGameHeader(
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Restart Game",
-                        tint = MaterialTheme.colorScheme.onSurface
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }

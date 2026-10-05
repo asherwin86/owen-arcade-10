@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Casino
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
@@ -35,6 +36,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,9 +54,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.GameScore
+import com.example.data.LeaderboardEntry
 import com.example.model.GameCategory
 import com.example.model.GameInfo
 import com.example.model.GameRegistry
+import com.example.ui.components.FirestoreStatusBadge
 import com.example.ui.components.HapticHelper
 import com.example.ui.theme.ArcadeTheme
 
@@ -70,12 +74,14 @@ fun ArcadeHomeScreen(
     val context = LocalContext.current
     val colors = ArcadeTheme.colors
     val textStyles = ArcadeTheme.textStyles
+    val leaderboardController = LocalLeaderboardController.current
 
     val filteredGames = GameRegistry.games.filter {
         selectedCategory == GameCategory.ALL || it.category == selectedCategory
     }
 
     val totalPlayed = highScores.values.sumOf { it.gamesPlayed }
+    val totalGlobalEntries = leaderboardController.topScoresByGame.values.sumOf { it.size }
 
     Column(
         modifier = Modifier
@@ -120,17 +126,32 @@ fun ArcadeHomeScreen(
                             color = colors.neonCyan
                         )
                     )
-                    Text(
-                        text = "10 Games • Infinite Fun",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    FirestoreStatusBadge(connectionState = leaderboardController.connectionState)
                 }
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Global Leaderboards Hall of Fame Button
+                IconButton(
+                    onClick = {
+                        HapticHelper.playClick(context)
+                        leaderboardController.onOpenGlobalLeaderboardScreen(null)
+                    },
+                    modifier = Modifier
+                        .background(colors.scoreGold, RoundedCornerShape(14.dp))
+                        .size(36.dp)
+                        .testTag("open_leaderboards_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.EmojiEvents,
+                        contentDescription = "Global Leaderboards",
+                        tint = Color(0xFF281D00),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
                 // Generate Music Button
-                androidx.compose.material3.IconButton(
+                IconButton(
                     onClick = {
                         HapticHelper.playClick(context)
                         onGenerateMusic()
@@ -172,47 +193,57 @@ fun ArcadeHomeScreen(
             }
         }
 
-        // Stats pill
-        if (totalPlayed > 0) {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = colors.surfaceCard),
-                border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
+        // Global Leaderboard & Stats Banner (always visible so player can access Hall of Fame or Callsign)
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = colors.surfaceCard),
+            border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 4.dp)
+                .clickable {
+                    HapticHelper.playClick(context)
+                    leaderboardController.onOpenGlobalLeaderboardScreen(null)
+                }
+                .testTag("home_leaderboard_banner")
+        ) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 4.dp)
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("🎮", fontSize = 16.sp)
-                        Spacer(modifier = Modifier.width(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🏆", fontSize = 16.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
                         Text(
-                            text = "PLAYED: $totalPlayed",
-                            style = textStyles.hudLabel,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "Trophy",
-                            tint = colors.scoreGold,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${highScores.count { it.value.highScore > 0 }} HIGH SCORES",
+                            text = "GLOBAL TOP 10 HALL OF FAME",
                             style = textStyles.hudLabel,
                             color = colors.scoreGold
                         )
+                        Text(
+                            text = "🕹️ ${leaderboardController.playerName} • PLAYED: $totalPlayed",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "Trophy",
+                        tint = colors.neonCyan,
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "$totalGlobalEntries RANKED →",
+                        style = textStyles.hudLabel,
+                        color = colors.neonCyan
+                    )
                 }
             }
         }
@@ -263,12 +294,18 @@ fun ArcadeHomeScreen(
         ) {
             items(filteredGames, key = { it.id }) { game ->
                 val scoreData = highScores[game.id]
+                val gameTop10 = leaderboardController.topScoresByGame[game.id] ?: emptyList()
                 GameCard(
                     game = game,
                     scoreData = scoreData,
+                    topEntry = gameTop10.firstOrNull(),
                     onClick = {
                         HapticHelper.playClick(context)
                         onGameSelected(game.id)
+                    },
+                    onOpenLeaderboard = {
+                        HapticHelper.playClick(context)
+                        leaderboardController.onOpenGlobalLeaderboardScreen(game.id)
                     }
                 )
             }
@@ -280,7 +317,9 @@ fun ArcadeHomeScreen(
 private fun GameCard(
     game: GameInfo,
     scoreData: GameScore?,
-    onClick: () -> Unit
+    topEntry: LeaderboardEntry?,
+    onClick: () -> Unit,
+    onOpenLeaderboard: () -> Unit
 ) {
     val bestScore = scoreData?.highScore ?: 0
     val colors = ArcadeTheme.colors
@@ -357,11 +396,14 @@ private fun GameCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // High score badge
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                // High score & Global #1 badge
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     if (bestScore > 0) {
                         Text(
-                            text = "★ BEST: $bestScore ${game.scoreUnit.uppercase()}",
+                            text = "★ YOU: $bestScore ${game.scoreUnit.uppercase()}",
                             style = textStyles.hudLabel,
                             color = colors.scoreGold
                         )
@@ -372,24 +414,56 @@ private fun GameCard(
                             color = colors.neonCyan.copy(alpha = 0.8f)
                         )
                     }
+
+                    if (topEntry != null) {
+                        Text(
+                            text = "🥇 #1: ${topEntry.score} (${topEntry.playerName})",
+                            style = textStyles.hudLabel.copy(fontSize = 9.sp),
+                            color = colors.neonCyan,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Play Button Icon
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(colors.neonCyan, CircleShape),
-                contentAlignment = Alignment.Center
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Play",
-                    tint = Color(0xFF003730),
-                    modifier = Modifier.size(24.dp)
-                )
+                // Play Button Icon
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(colors.neonCyan, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Play",
+                        tint = Color(0xFF003730),
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                // Game Top 10 Leaderboard Button
+                IconButton(
+                    onClick = onOpenLeaderboard,
+                    modifier = Modifier
+                        .size(34.dp)
+                        .background(colors.surfaceElevated, CircleShape)
+                        .border(1.dp, colors.scoreGold.copy(alpha = 0.6f), CircleShape)
+                        .testTag("card_leaderboard_${game.id}")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.EmojiEvents,
+                        contentDescription = "${game.title} Top 10 Leaderboard",
+                        tint = colors.scoreGold,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
     }

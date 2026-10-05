@@ -150,6 +150,7 @@ fun MinesweeperGame(
 
         if (updated[r][c].isMine) {
             // Hit mine! Reveal all mines
+            val safeBeforeMine = updated.sumOf { row -> row.count { it.isRevealed && !it.isMine } }
             for (row in updated) {
                 for (cell in row) {
                     if (cell.isMine) cell.isRevealed = true
@@ -159,6 +160,9 @@ fun MinesweeperGame(
             faceEmoji = "💥"
             isGameOver = true
             HapticHelper.playGameOver(context)
+            if (safeBeforeMine > 0) {
+                onRecordScore(safeBeforeMine)
+            }
             return
         }
 

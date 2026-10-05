@@ -7,6 +7,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
@@ -40,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.example.ui.LocalLeaderboardController
 import com.example.ui.theme.ArcadeTheme
 
 object HapticHelper {
@@ -123,6 +127,16 @@ fun GameOverDialog(
     val isNewHigh = score > highScore && score > 0
     val colors = ArcadeTheme.colors
     val textStyles = ArcadeTheme.textStyles
+    val leaderboardController = LocalLeaderboardController.current
+    val activeGameId = leaderboardController.activeGameId
+    val gameTop10 = activeGameId?.let { leaderboardController.topScoresByGame[it] } ?: emptyList()
+
+    // Calculate rank in top 10 if score > 0
+    val projectedRank = if (score > 0) {
+        val higherCount = gameTop10.count { it.score > score }
+        val rank = higherCount + 1
+        if (rank <= 10) rank else null
+    } else null
 
     Dialog(onDismissRequest = {}) {
         Card(
@@ -140,12 +154,12 @@ fun GameOverDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
+                    .padding(22.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(
                     modifier = Modifier
-                        .size(68.dp)
+                        .size(64.dp)
                         .background(
                             if (isWin) colors.neonGreen.copy(alpha = 0.2f)
                             else colors.neonPink.copy(alpha = 0.2f),
@@ -160,17 +174,17 @@ fun GameOverDialog(
                 ) {
                     Text(
                         text = if (isWin) "🏆" else "💥",
-                        fontSize = 34.sp
+                        fontSize = 32.sp
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
                     text = title.uppercase(),
                     style = textStyles.gameHeaderTitle.copy(
                         color = if (isWin) colors.neonGreen else colors.neonPink,
-                        fontSize = 22.sp
+                        fontSize = 20.sp
                     ),
                     textAlign = TextAlign.Center
                 )
@@ -182,11 +196,11 @@ fun GameOverDialog(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         ),
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 6.dp)
+                        modifier = Modifier.padding(top = 4.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Card(
                     shape = RoundedCornerShape(16.dp),
@@ -197,7 +211,7 @@ fun GameOverDialog(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(14.dp),
                         horizontalArrangement = Arrangement.SpaceAround
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -208,7 +222,7 @@ fun GameOverDialog(
                             )
                             Text(
                                 text = "$score $scoreUnit",
-                                style = textStyles.hudScore.copy(fontSize = 22.sp),
+                                style = textStyles.hudScore.copy(fontSize = 20.sp),
                                 color = colors.neonCyan
                             )
                         }
@@ -216,7 +230,7 @@ fun GameOverDialog(
                         Box(
                             modifier = Modifier
                                 .width(1.dp)
-                                .height(40.dp)
+                                .height(38.dp)
                                 .background(colors.border)
                         )
 
@@ -228,31 +242,98 @@ fun GameOverDialog(
                             )
                             Text(
                                 text = "${maxOf(score, highScore)} $scoreUnit",
-                                style = textStyles.hudScore.copy(fontSize = 22.sp),
+                                style = textStyles.hudScore.copy(fontSize = 20.sp),
                                 color = colors.scoreGold
                             )
                         }
                     }
                 }
 
-                if (isNewHigh) {
-                    Spacer(modifier = Modifier.height(12.dp))
+                if (isNewHigh || projectedRank != null) {
+                    Spacer(modifier = Modifier.height(10.dp))
                     Card(
                         shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = colors.scoreGold.copy(alpha = 0.2f)),
+                        colors = CardDefaults.cardColors(containerColor = colors.scoreGold.copy(alpha = 0.18f)),
                         border = androidx.compose.foundation.BorderStroke(1.dp, colors.scoreGold)
                     ) {
                         Text(
-                            text = "★ NEW HIGH SCORE! ★",
+                            text = when {
+                                isNewHigh && projectedRank != null -> "★ NEW HIGH SCORE • GLOBAL RANK #$projectedRank ★"
+                                projectedRank != null -> "🏆 TOP 10 LEADERBOARD • RANK #$projectedRank"
+                                else -> "★ NEW HIGH SCORE! ★"
+                            },
                             color = colors.scoreGold,
                             style = textStyles.hudLabel,
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                            fontSize = 11.sp,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Player Callsign bar for leaderboard entry
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(colors.surfaceElevated, RoundedCornerShape(12.dp))
+                        .clickable { leaderboardController.onOpenEditCallsign() }
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                        .testTag("dialog_edit_callsign"),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "🕹️ CALLSIGN: ",
+                            style = textStyles.hudLabel,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = leaderboardController.playerName,
+                            style = textStyles.hudLabel,
+                            color = colors.neonCyan
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Change Callsign",
+                            tint = colors.neonCyan,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("EDIT", style = textStyles.hudLabel, color = colors.neonCyan)
+                    }
+                }
+
+                if (activeGameId != null) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedButton(
+                        onClick = { leaderboardController.onOpenGameLeaderboardModal(activeGameId) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                            .testTag("dialog_leaderboard_button"),
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, colors.scoreGold.copy(alpha = 0.7f))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.EmojiEvents,
+                            contentDescription = "Top 10 Leaderboard",
+                            tint = colors.scoreGold,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "VIEW TOP 10 LEADERBOARD",
+                            color = colors.scoreGold,
+                            style = textStyles.hudLabel
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),

@@ -10,19 +10,26 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.ui.ArcadeHomeScreen
 import com.example.audio.AudioPlayer
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalContext
+import com.example.ui.ArcadeHomeScreen
 import com.example.ui.ArcadeViewModel
+import com.example.ui.GlobalLeaderboardScreen
+import com.example.ui.LeaderboardUiController
+import com.example.ui.LocalLeaderboardController
 import com.example.ui.components.ArcadeLoadingOverlay
+import com.example.ui.components.EditCallsignDialog
+import com.example.ui.components.FirebaseConfigDialog
+import com.example.ui.components.GameLeaderboardModalDialog
 import com.example.ui.games.BrickBreakerGame
 import com.example.ui.games.ConnectFourGame
 import com.example.ui.games.FlappyBirdGame
@@ -52,20 +59,29 @@ fun ArcadeApp(arcadeViewModel: ArcadeViewModel = viewModel()) {
     val isLoading by arcadeViewModel.isLoading.collectAsStateWithLifecycle()
     val selectedGameId by arcadeViewModel.selectedGameId.collectAsStateWithLifecycle()
     val highScores by arcadeViewModel.highScores.collectAsStateWithLifecycle()
+    val topScoresByGame by arcadeViewModel.topScoresByGame.collectAsStateWithLifecycle()
+    val firestoreState by arcadeViewModel.firestoreConnectionState.collectAsStateWithLifecycle()
+    val playerName by arcadeViewModel.playerName.collectAsStateWithLifecycle()
     val selectedCategory by arcadeViewModel.selectedCategory.collectAsStateWithLifecycle()
-    
+
+    val isGlobalLeaderboardOpen by arcadeViewModel.isGlobalLeaderboardOpen.collectAsStateWithLifecycle()
+    val leaderboardFocusGameId by arcadeViewModel.leaderboardFocusGameId.collectAsStateWithLifecycle()
+    val modalLeaderboardGameId by arcadeViewModel.modalLeaderboardGameId.collectAsStateWithLifecycle()
+    val isEditCallsignOpen by arcadeViewModel.isEditCallsignOpen.collectAsStateWithLifecycle()
+    val isFirebaseConfigOpen by arcadeViewModel.isFirebaseConfigOpen.collectAsStateWithLifecycle()
+
     val isMusicGenerating by arcadeViewModel.isMusicGenerating.collectAsStateWithLifecycle()
     val generatedMusicBase64 by arcadeViewModel.generatedMusicBase64.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    
+
     val audioPlayer = remember { AudioPlayer(context) }
-    
+
     DisposableEffect(Unit) {
         onDispose {
             audioPlayer.stop()
         }
     }
-    
+
     LaunchedEffect(generatedMusicBase64) {
         generatedMusicBase64?.let { base64 ->
             audioPlayer.playBase64Audio(base64)
@@ -77,103 +93,175 @@ fun ArcadeApp(arcadeViewModel: ArcadeViewModel = viewModel()) {
         return
     }
 
-    BackHandler(enabled = selectedGameId != null) {
-        arcadeViewModel.selectGame(null)
+    val controller = LeaderboardUiController(
+        activeGameId = selectedGameId,
+        playerId = arcadeViewModel.playerId,
+        playerName = playerName,
+        connectionState = firestoreState,
+        topScoresByGame = topScoresByGame,
+        onOpenGameLeaderboardModal = { gameId -> arcadeViewModel.openGameLeaderboardModal(gameId) },
+        onOpenGlobalLeaderboardScreen = { gameId ->
+            arcadeViewModel.selectGame(null)
+            arcadeViewModel.openGlobalLeaderboard(gameId)
+        },
+        onOpenEditCallsign = { arcadeViewModel.setEditCallsignOpen(true) },
+        onOpenFirebaseConfig = { arcadeViewModel.setFirebaseConfigOpen(true) },
+        onRefreshLeaderboards = { arcadeViewModel.refreshLeaderboards() },
+        onUpdatePlayerName = { newName -> arcadeViewModel.updatePlayerName(newName) },
+        onSaveFirebaseConfig = { proj, app, key -> arcadeViewModel.saveFirebaseConfig(proj, app, key) },
+        getSavedFirebaseConfig = { arcadeViewModel.getSavedFirebaseConfig() }
+    )
+
+    BackHandler(enabled = selectedGameId != null || isGlobalLeaderboardOpen) {
+        if (selectedGameId != null) {
+            arcadeViewModel.selectGame(null)
+        } else if (isGlobalLeaderboardOpen) {
+            arcadeViewModel.closeGlobalLeaderboard()
+        }
     }
 
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        when (selectedGameId) {
-            "snake" -> {
-                val best = highScores["snake"]?.highScore ?: 0
-                SnakeGame(
-                    highScore = best,
-                    onRecordScore = { arcadeViewModel.recordScore("snake", it) },
-                    onBack = { arcadeViewModel.selectGame(null) }
+    CompositionLocalProvider(LocalLeaderboardController provides controller) {
+        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+            if (isGlobalLeaderboardOpen && selectedGameId == null) {
+                GlobalLeaderboardScreen(
+                    initialGameId = leaderboardFocusGameId,
+                    topScoresByGame = topScoresByGame,
+                    localHighScores = highScores,
+                    currentPlayerId = arcadeViewModel.playerId,
+                    currentPlayerName = playerName,
+                    connectionState = firestoreState,
+                    onBack = { arcadeViewModel.closeGlobalLeaderboard() },
+                    onPlayGame = { gameId -> arcadeViewModel.selectGame(gameId) },
+                    onEditCallsign = { arcadeViewModel.setEditCallsignOpen(true) },
+                    onOpenFirebaseConfig = { arcadeViewModel.setFirebaseConfigOpen(true) },
+                    onRefresh = { arcadeViewModel.refreshLeaderboards() }
                 )
-            }
-            "2048" -> {
-                val best = highScores["2048"]?.highScore ?: 0
-                Game2048(
-                    highScore = best,
-                    onRecordScore = { arcadeViewModel.recordScore("2048", it) },
-                    onBack = { arcadeViewModel.selectGame(null) }
-                )
-            }
-            "minesweeper" -> {
-                val best = highScores["minesweeper"]?.highScore ?: 0
-                MinesweeperGame(
-                    highScore = best,
-                    onRecordScore = { arcadeViewModel.recordScore("minesweeper", it) },
-                    onBack = { arcadeViewModel.selectGame(null) }
-                )
-            }
-            "brick_breaker" -> {
-                val best = highScores["brick_breaker"]?.highScore ?: 0
-                BrickBreakerGame(
-                    highScore = best,
-                    onRecordScore = { arcadeViewModel.recordScore("brick_breaker", it) },
-                    onBack = { arcadeViewModel.selectGame(null) }
-                )
-            }
-            "word_guess" -> {
-                val best = highScores["word_guess"]?.highScore ?: 0
-                WordGuessGame(
-                    highScore = best,
-                    onRecordScore = { arcadeViewModel.recordScore("word_guess", it) },
-                    onBack = { arcadeViewModel.selectGame(null) }
-                )
-            }
-            "tic_tac_toe" -> {
-                val best = highScores["tic_tac_toe"]?.highScore ?: 0
-                TicTacToeGame(
-                    highScore = best,
-                    onRecordScore = { arcadeViewModel.recordScore("tic_tac_toe", it) },
-                    onBack = { arcadeViewModel.selectGame(null) }
-                )
-            }
-            "flappy_bird" -> {
-                val best = highScores["flappy_bird"]?.highScore ?: 0
-                FlappyBirdGame(
-                    highScore = best,
-                    onRecordScore = { arcadeViewModel.recordScore("flappy_bird", it) },
-                    onBack = { arcadeViewModel.selectGame(null) }
-                )
-            }
-            "memory_cards" -> {
-                val best = highScores["memory_cards"]?.highScore ?: 0
-                MemoryMatchGame(
-                    highScore = best,
-                    onRecordScore = { arcadeViewModel.recordScore("memory_cards", it) },
-                    onBack = { arcadeViewModel.selectGame(null) }
-                )
-            }
-            "connect_four" -> {
-                val best = highScores["connect_four"]?.highScore ?: 0
-                ConnectFourGame(
-                    highScore = best,
-                    onRecordScore = { arcadeViewModel.recordScore("connect_four", it) },
-                    onBack = { arcadeViewModel.selectGame(null) }
-                )
-            }
-            "whack_a_mole" -> {
-                val best = highScores["whack_a_mole"]?.highScore ?: 0
-                WhackAMoleGame(
-                    highScore = best,
-                    onRecordScore = { arcadeViewModel.recordScore("whack_a_mole", it) },
-                    onBack = { arcadeViewModel.selectGame(null) }
-                )
-            }
-            else -> {
-                ArcadeHomeScreen(
-                    highScores = highScores,
-                    selectedCategory = selectedCategory,
-                    onCategorySelected = { arcadeViewModel.setCategory(it) },
-                    onGameSelected = { arcadeViewModel.selectGame(it) },
-                    onPlayRandom = { arcadeViewModel.playRandomGame() },
-                    onGenerateMusic = { arcadeViewModel.generateHomeMusic() }
-                )
+            } else {
+                when (selectedGameId) {
+                    "snake" -> {
+                        val best = highScores["snake"]?.highScore ?: 0
+                        SnakeGame(
+                            highScore = best,
+                            onRecordScore = { arcadeViewModel.recordScore("snake", it) },
+                            onBack = { arcadeViewModel.selectGame(null) }
+                        )
+                    }
+                    "2048" -> {
+                        val best = highScores["2048"]?.highScore ?: 0
+                        Game2048(
+                            highScore = best,
+                            onRecordScore = { arcadeViewModel.recordScore("2048", it) },
+                            onBack = { arcadeViewModel.selectGame(null) }
+                        )
+                    }
+                    "minesweeper" -> {
+                        val best = highScores["minesweeper"]?.highScore ?: 0
+                        MinesweeperGame(
+                            highScore = best,
+                            onRecordScore = { arcadeViewModel.recordScore("minesweeper", it) },
+                            onBack = { arcadeViewModel.selectGame(null) }
+                        )
+                    }
+                    "brick_breaker" -> {
+                        val best = highScores["brick_breaker"]?.highScore ?: 0
+                        BrickBreakerGame(
+                            highScore = best,
+                            onRecordScore = { arcadeViewModel.recordScore("brick_breaker", it) },
+                            onBack = { arcadeViewModel.selectGame(null) }
+                        )
+                    }
+                    "word_guess" -> {
+                        val best = highScores["word_guess"]?.highScore ?: 0
+                        WordGuessGame(
+                            highScore = best,
+                            onRecordScore = { arcadeViewModel.recordScore("word_guess", it) },
+                            onBack = { arcadeViewModel.selectGame(null) }
+                        )
+                    }
+                    "tic_tac_toe" -> {
+                        val best = highScores["tic_tac_toe"]?.highScore ?: 0
+                        TicTacToeGame(
+                            highScore = best,
+                            onRecordScore = { arcadeViewModel.recordScore("tic_tac_toe", it) },
+                            onBack = { arcadeViewModel.selectGame(null) }
+                        )
+                    }
+                    "flappy_bird" -> {
+                        val best = highScores["flappy_bird"]?.highScore ?: 0
+                        FlappyBirdGame(
+                            highScore = best,
+                            onRecordScore = { arcadeViewModel.recordScore("flappy_bird", it) },
+                            onBack = { arcadeViewModel.selectGame(null) }
+                        )
+                    }
+                    "memory_cards" -> {
+                        val best = highScores["memory_cards"]?.highScore ?: 0
+                        MemoryMatchGame(
+                            highScore = best,
+                            onRecordScore = { arcadeViewModel.recordScore("memory_cards", it) },
+                            onBack = { arcadeViewModel.selectGame(null) }
+                        )
+                    }
+                    "connect_four" -> {
+                        val best = highScores["connect_four"]?.highScore ?: 0
+                        ConnectFourGame(
+                            highScore = best,
+                            onRecordScore = { arcadeViewModel.recordScore("connect_four", it) },
+                            onBack = { arcadeViewModel.selectGame(null) }
+                        )
+                    }
+                    "whack_a_mole" -> {
+                        val best = highScores["whack_a_mole"]?.highScore ?: 0
+                        WhackAMoleGame(
+                            highScore = best,
+                            onRecordScore = { arcadeViewModel.recordScore("whack_a_mole", it) },
+                            onBack = { arcadeViewModel.selectGame(null) }
+                        )
+                    }
+                    else -> {
+                        ArcadeHomeScreen(
+                            highScores = highScores,
+                            selectedCategory = selectedCategory,
+                            onCategorySelected = { arcadeViewModel.setCategory(it) },
+                            onGameSelected = { arcadeViewModel.selectGame(it) },
+                            onPlayRandom = { arcadeViewModel.playRandomGame() },
+                            onGenerateMusic = { arcadeViewModel.generateHomeMusic() }
+                        )
+                    }
+                }
             }
         }
+
+        // Modal dialogs accessible from anywhere
+        GameLeaderboardModalDialog(
+            gameId = modalLeaderboardGameId,
+            entries = modalLeaderboardGameId?.let { topScoresByGame[it] } ?: emptyList(),
+            currentPlayerId = arcadeViewModel.playerId,
+            currentPlayerName = playerName,
+            connectionState = firestoreState,
+            onDismiss = { arcadeViewModel.openGameLeaderboardModal(null) },
+            onOpenFullHub = { gameId ->
+                arcadeViewModel.selectGame(null)
+                arcadeViewModel.openGlobalLeaderboard(gameId)
+            },
+            onEditCallsign = { arcadeViewModel.setEditCallsignOpen(true) },
+            onRefresh = { arcadeViewModel.refreshLeaderboards() }
+        )
+
+        EditCallsignDialog(
+            isOpen = isEditCallsignOpen,
+            currentName = playerName,
+            onDismiss = { arcadeViewModel.setEditCallsignOpen(false) },
+            onSave = { newName -> arcadeViewModel.updatePlayerName(newName) }
+        )
+
+        FirebaseConfigDialog(
+            isOpen = isFirebaseConfigOpen,
+            initialConfig = arcadeViewModel.getSavedFirebaseConfig(),
+            connectionState = firestoreState,
+            onDismiss = { arcadeViewModel.setFirebaseConfigOpen(false) },
+            onSaveConfig = { proj, app, key -> arcadeViewModel.saveFirebaseConfig(proj, app, key) }
+        )
     }
 }
 
