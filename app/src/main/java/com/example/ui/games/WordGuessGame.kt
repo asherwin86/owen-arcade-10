@@ -115,17 +115,20 @@ fun WordGuessGame(
         when (key) {
             "ENTER" -> {
                 if (currentGuess.length == 5) {
-                    HapticHelper.playScore(context)
                     if (currentGuess == targetWord) {
                         isVictory = true
                         totalWins++
                         onRecordScore(totalWins)
+                        HapticHelper.playSuccess(context)
                     } else if (currentAttempt >= 5) {
                         isGameOver = true
                         HapticHelper.playGameOver(context)
                     } else {
                         currentAttempt++
+                        HapticHelper.playBump(context)
                     }
+                } else {
+                    HapticHelper.playError(context)
                 }
             }
             "DEL" -> {

@@ -65,5 +65,5 @@ app.post('/api/leaderboard/:gameId', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(\`Arcade 10 Backend API running on port \${PORT}\`);
+    console.log(`Arcade 10 Backend API running on port ${PORT}`);
 });

@@ -165,7 +165,7 @@ fun BrickBreakerGame(
                 val speed = 0.014f
                 ballVx = speed * sin(angle).coerceIn(-0.012f, 0.012f)
                 ballVy = -speed * cos(angle).coerceAtLeast(0.008f)
-                HapticHelper.playScore(context)
+                HapticHelper.playBump(context)
             }
 
             // Brick collision
@@ -188,6 +188,7 @@ fun BrickBreakerGame(
                     // Check victory
                     if (bricks.all { it.isDestroyed }) {
                         isVictory = true
+                        HapticHelper.playSuccess(context)
                         onRecordScore(score)
                         break
                     }

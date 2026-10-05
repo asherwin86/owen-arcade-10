@@ -191,7 +191,7 @@ fun MinesweeperGame(
         }
 
         grid = updated
-        HapticHelper.playScore(context)
+        HapticHelper.playBump(context)
 
         // Check victory
         var revealedCount = 0
@@ -204,7 +204,7 @@ fun MinesweeperGame(
         if (revealedCount == (ROWS * COLS - TOTAL_MINES)) {
             isVictory = true
             faceEmoji = "😎"
-            HapticHelper.playScore(context)
+            HapticHelper.playSuccess(context)
             val finalScore = (1000 - timerSeconds * 2).coerceAtLeast(100)
             onRecordScore(finalScore)
         }

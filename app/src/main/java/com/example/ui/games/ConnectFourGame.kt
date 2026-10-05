@@ -131,7 +131,7 @@ fun ConnectFourGame(
                     if (win == 1) {
                         redWins++
                         onRecordScore(redWins)
-                        HapticHelper.playScore(context)
+                        HapticHelper.playSuccess(context)
                     } else if (win == 2) {
                         yellowWins++
                         HapticHelper.playGameOver(context)
@@ -314,7 +314,11 @@ fun ConnectFourGame(
                                 .fillMaxSize()
                                 .clickable(enabled = !isGameOver && (isRedTurn || !vsAI)) {
                                     val success = dropDisc(c, if (isRedTurn) 1 else 2)
-                                    if (success) HapticHelper.playClick(context)
+                                    if (success) {
+                                        HapticHelper.playBump(context)
+                                    } else {
+                                        HapticHelper.playError(context)
+                                    }
                                 }
                                 .testTag("col_$c"),
                             verticalArrangement = Arrangement.spacedBy(6.dp)

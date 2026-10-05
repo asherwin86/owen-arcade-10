@@ -154,7 +154,11 @@ fun TicTacToeGame(
     }
 
     fun onCellClick(index: Int) {
-        if (board[index].isNotEmpty() || isGameOver) return
+        if (isGameOver) return
+        if (board[index].isNotEmpty()) {
+            HapticHelper.playError(context)
+            return
+        }
         if (opponentMode == TTTOpponent.AI && !isXTurn) return
 
         val updated = board.toMutableList()
@@ -171,12 +175,13 @@ fun TicTacToeGame(
             if (win == "X") {
                 xWins++
                 onRecordScore(xWins)
-                HapticHelper.playScore(context)
+                HapticHelper.playSuccess(context)
             } else if (win == "O") {
                 oWins++
                 HapticHelper.playGameOver(context)
             } else {
                 draws++
+                HapticHelper.playError(context)
             }
         } else {
             isXTurn = !isXTurn

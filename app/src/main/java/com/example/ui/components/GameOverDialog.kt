@@ -54,22 +54,54 @@ object HapticHelper {
     fun playGameOver(context: Context) {
         vibrate(context, 120)
     }
+    
+    fun playBump(context: Context) {
+        vibrate(context, 10)
+    }
+    
+    fun playError(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrateWaveform(context, longArrayOf(0, 30, 40, 30), intArrayOf(0, 255, 0, 255))
+        } else {
+            vibrate(context, 60)
+        }
+    }
+    
+    fun playSuccess(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrateWaveform(context, longArrayOf(0, 20, 30, 40), intArrayOf(0, 100, 0, 255))
+        } else {
+            vibrate(context, 50)
+        }
+    }
+
+    private fun getVibrator(context: Context): Vibrator? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+            vibratorManager?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        }
+    }
 
     private fun vibrate(context: Context, millis: Long) {
         try {
-            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
-                vibratorManager?.defaultVibrator
-            } else {
-                @Suppress("DEPRECATION")
-                context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-            }
+            val vibrator = getVibrator(context)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 vibrator?.vibrate(VibrationEffect.createOneShot(millis, VibrationEffect.DEFAULT_AMPLITUDE))
             } else {
                 @Suppress("DEPRECATION")
                 vibrator?.vibrate(millis)
             }
+        } catch (_: Exception) {}
+    }
+    
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
+    private fun vibrateWaveform(context: Context, timings: LongArray, amplitudes: IntArray) {
+        try {
+            val vibrator = getVibrator(context)
+            vibrator?.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
         } catch (_: Exception) {}
     }
 }

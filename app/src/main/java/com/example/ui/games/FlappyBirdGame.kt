@@ -91,7 +91,7 @@ fun FlappyBirdGame(
         }
         if (isPlaying && !isGameOver) {
             birdVelocity = -0.016f
-            HapticHelper.playClick(context)
+            HapticHelper.playBump(context)
         }
     }
 

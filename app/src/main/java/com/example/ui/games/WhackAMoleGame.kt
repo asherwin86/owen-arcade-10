@@ -137,11 +137,11 @@ fun WhackAMoleGame(
                 val gained = pts * combo
                 score += gained
                 combo = (combo + 1).coerceAtMost(4)
-                HapticHelper.playScore(context)
+                HapticHelper.playBump(context)
             } else {
                 score = (score + pts).coerceAtLeast(0)
                 combo = 1
-                HapticHelper.playGameOver(context)
+                HapticHelper.playError(context)
             }
 
             val updated = holes.toMutableList()
@@ -150,7 +150,7 @@ fun WhackAMoleGame(
         } else {
             // Tapped empty hole
             combo = 1
-            HapticHelper.playClick(context)
+            HapticHelper.playError(context)
         }
     }
 

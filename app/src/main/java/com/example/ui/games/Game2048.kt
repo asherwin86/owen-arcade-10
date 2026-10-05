@@ -196,13 +196,23 @@ fun Game2048(
             addRandomTile(nextBoard)
             board = nextBoard
             score += gainedScore
-            HapticHelper.playScore(context)
+            
+            if (hasReached2048) {
+                HapticHelper.playSuccess(context)
+            } else if (gainedScore > 0) {
+                HapticHelper.playScore(context)
+            } else {
+                HapticHelper.playBump(context)
+            }
 
             if (!isMovePossible(board)) {
                 isGameOver = true
                 HapticHelper.playGameOver(context)
                 onRecordScore(score)
             }
+        } else {
+            // Invalid move
+            HapticHelper.playError(context)
         }
     }
 

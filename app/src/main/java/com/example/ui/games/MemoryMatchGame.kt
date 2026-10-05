@@ -99,7 +99,7 @@ fun MemoryMatchGame(
                 updated[first].isMatched = true
                 updated[second].isMatched = true
                 pairsMatched++
-                HapticHelper.playScore(context)
+                HapticHelper.playSuccess(context)
 
                 if (pairsMatched == 8) {
                     isVictory = true
@@ -109,7 +109,7 @@ fun MemoryMatchGame(
             } else {
                 updated[first].isFaceUp = false
                 updated[second].isFaceUp = false
-                HapticHelper.playClick(context)
+                HapticHelper.playError(context)
             }
 
             cards = updated

@@ -216,14 +216,18 @@ fun SnakeGame(
                                 if (abs(dx) > abs(dy) && abs(dx) > 10) {
                                     if (dx > 0 && direction != Direction.LEFT) {
                                         nextDirection = Direction.RIGHT
+                                        HapticHelper.playBump(context)
                                     } else if (dx < 0 && direction != Direction.RIGHT) {
                                         nextDirection = Direction.LEFT
+                                        HapticHelper.playBump(context)
                                     }
                                 } else if (abs(dy) > 10) {
                                     if (dy > 0 && direction != Direction.UP) {
                                         nextDirection = Direction.DOWN
+                                        HapticHelper.playBump(context)
                                     } else if (dy < 0 && direction != Direction.DOWN) {
                                         nextDirection = Direction.UP
+                                        HapticHelper.playBump(context)
                                     }
                                 }
                             }
@@ -321,7 +325,10 @@ fun SnakeGame(
 
             // Pause toggle
             IconButton(
-                onClick = { isPaused = !isPaused },
+                onClick = { 
+                    isPaused = !isPaused 
+                    HapticHelper.playClick(context)
+                },
                 modifier = Modifier
                     .size(44.dp)
                     .background(Color(0xFF1E1B2E), CircleShape)
