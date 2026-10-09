@@ -87,6 +87,28 @@ class ArcadeViewModel(application: Application) : AndroidViewModel(application) 
     private val _isFirebaseConfigOpen = MutableStateFlow(false)
     val isFirebaseConfigOpen: StateFlow<Boolean> = _isFirebaseConfigOpen.asStateFlow()
 
+    private val _isMusicStudioOpen = MutableStateFlow(false)
+    val isMusicStudioOpen: StateFlow<Boolean> = _isMusicStudioOpen.asStateFlow()
+
+    private val _musicStudioTargetGameId = MutableStateFlow<String?>(null)
+    val musicStudioTargetGameId: StateFlow<String?> = _musicStudioTargetGameId.asStateFlow()
+
+    private val _isUpdateDialogOpen = MutableStateFlow(false)
+    val isUpdateDialogOpen: StateFlow<Boolean> = _isUpdateDialogOpen.asStateFlow()
+
+    fun setUpdateDialogOpen(open: Boolean) {
+        _isUpdateDialogOpen.value = open
+    }
+
+    fun openMusicStudio(targetGameId: String? = null) {
+        _musicStudioTargetGameId.value = targetGameId
+        _isMusicStudioOpen.value = true
+    }
+
+    fun closeMusicStudio() {
+        _isMusicStudioOpen.value = false
+    }
+
     init {
         viewModelScope.launch {
             delay(2000) // Simulate asset loading

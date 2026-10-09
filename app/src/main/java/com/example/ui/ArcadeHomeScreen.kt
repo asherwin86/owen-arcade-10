@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -40,9 +41,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.example.audio.ArcadeMusicManager
+import com.example.ui.music.ArcadeMusicBar
+import com.example.ui.update.AutoUpdateNotificationBanner
+import com.example.ui.update.AutoUpdateStatusChip
+import com.example.update.AppUpdateManager
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -69,7 +77,10 @@ fun ArcadeHomeScreen(
     onCategorySelected: (GameCategory) -> Unit,
     onGameSelected: (String) -> Unit,
     onPlayRandom: () -> Unit,
-    onGenerateMusic: () -> Unit
+    onGenerateMusic: () -> Unit,
+    musicManager: ArcadeMusicManager? = null,
+    updateManager: AppUpdateManager? = null,
+    onOpenUpdateCenter: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val colors = ArcadeTheme.colors
@@ -116,21 +127,55 @@ fun ArcadeHomeScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(10.dp))
 
                 Column {
                     Text(
                         text = "ARCADE 10",
                         style = textStyles.gameHeaderTitle.copy(
-                            fontSize = 20.sp,
+                            fontSize = 19.sp,
                             color = colors.neonCyan
                         )
                     )
-                    FirestoreStatusBadge(connectionState = leaderboardController.connectionState)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        FirestoreStatusBadge(connectionState = leaderboardController.connectionState)
+                        if (updateManager != null) {
+                            AutoUpdateStatusChip(
+                                updateManager = updateManager,
+                                onClick = {
+                                    HapticHelper.playClick(context)
+                                    onOpenUpdateCenter()
+                                }
+                            )
+                        }
+                    }
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                // Auto-Update Center Button
+                IconButton(
+                    onClick = {
+                        HapticHelper.playClick(context)
+                        onOpenUpdateCenter()
+                    },
+                    modifier = Modifier
+                        .background(colors.surfaceElevated, RoundedCornerShape(12.dp))
+                        .border(1.dp, colors.neonCyan.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                        .size(36.dp)
+                        .testTag("open_update_center_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SystemUpdate,
+                        contentDescription = "Auto-Update Center",
+                        tint = colors.neonCyan,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
                 // Global Leaderboards Hall of Fame Button
                 IconButton(
                     onClick = {
@@ -138,7 +183,7 @@ fun ArcadeHomeScreen(
                         leaderboardController.onOpenGlobalLeaderboardScreen(null)
                     },
                     modifier = Modifier
-                        .background(colors.scoreGold, RoundedCornerShape(14.dp))
+                        .background(colors.scoreGold, RoundedCornerShape(12.dp))
                         .size(36.dp)
                         .testTag("open_leaderboards_button")
                 ) {
@@ -157,7 +202,7 @@ fun ArcadeHomeScreen(
                         onGenerateMusic()
                     },
                     modifier = Modifier
-                        .background(colors.neonPurple, RoundedCornerShape(14.dp))
+                        .background(colors.neonPurple, RoundedCornerShape(12.dp))
                         .size(36.dp)
                 ) {
                     Icon(
@@ -178,19 +223,51 @@ fun ArcadeHomeScreen(
                         containerColor = colors.neonCyan,
                         contentColor = Color(0xFF003730)
                     ),
-                    shape = RoundedCornerShape(14.dp),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
                     modifier = Modifier.testTag("random_game_button").height(36.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Casino,
                         contentDescription = "Random Game",
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Surprise", style = textStyles.hudLabel, fontSize = 12.sp)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Surprise", style = textStyles.hudLabel, fontSize = 11.sp)
                 }
             }
+        }
+
+        // Auto-Update / Live Broadcast Banner
+        if (updateManager != null) {
+            AutoUpdateNotificationBanner(
+                updateManager = updateManager,
+                onOpenUpdateCenter = onOpenUpdateCenter,
+                onPlayFeaturedGame = onGameSelected,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+            )
+        }
+
+        // Background Music Controller Bar
+        if (musicManager != null) {
+            val currentTrackTitle by musicManager.currentTrackTitle.collectAsState()
+            val currentTrackSub by musicManager.currentTrackSub.collectAsState()
+            val isPlaying by musicManager.isPlaying.collectAsState()
+            val isMuted by musicManager.isMuted.collectAsState()
+            val volume by musicManager.volume.collectAsState()
+            val isAiGenerated by musicManager.isAiGenerated.collectAsState()
+
+            ArcadeMusicBar(
+                musicManager = musicManager,
+                currentTrackTitle = currentTrackTitle,
+                currentTrackSub = currentTrackSub,
+                isPlaying = isPlaying,
+                isMuted = isMuted,
+                volume = volume,
+                isAiGenerated = isAiGenerated,
+                onOpenMusicStudio = onGenerateMusic,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+            )
         }
 
         // Global Leaderboard & Stats Banner (always visible so player can access Hall of Fame or Callsign)

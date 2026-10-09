@@ -18,9 +18,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.audio.AudioPlayer
+import com.example.audio.ArcadeMusicManager
+import com.example.audio.LocalMusicManager
 import com.example.ui.ArcadeHomeScreen
 import com.example.ui.ArcadeViewModel
 import com.example.ui.GlobalLeaderboardScreen
@@ -30,12 +34,17 @@ import com.example.ui.components.ArcadeLoadingOverlay
 import com.example.ui.components.EditCallsignDialog
 import com.example.ui.components.FirebaseConfigDialog
 import com.example.ui.components.GameLeaderboardModalDialog
+import com.example.ui.music.MusicGenerationDialog
+import com.example.ui.update.AppUpdateDialog
+import com.example.update.AppUpdateManager
+import com.example.update.LocalAppUpdateManager
 import com.example.ui.games.BrickBreakerGame
 import com.example.ui.games.ConnectFourGame
 import com.example.ui.games.FlappyBirdGame
 import com.example.ui.games.Game2048
 import com.example.ui.games.MemoryMatchGame
 import com.example.ui.games.MinesweeperGame
+import com.example.ui.games.OwenTagGame
 import com.example.ui.games.SnakeGame
 import com.example.ui.games.TicTacToeGame
 import com.example.ui.games.WhackAMoleGame
@@ -72,19 +81,44 @@ fun ArcadeApp(arcadeViewModel: ArcadeViewModel = viewModel()) {
 
     val isMusicGenerating by arcadeViewModel.isMusicGenerating.collectAsStateWithLifecycle()
     val generatedMusicBase64 by arcadeViewModel.generatedMusicBase64.collectAsStateWithLifecycle()
+    val isMusicStudioOpen by arcadeViewModel.isMusicStudioOpen.collectAsStateWithLifecycle()
+    val musicStudioTargetGameId by arcadeViewModel.musicStudioTargetGameId.collectAsStateWithLifecycle()
+    val isUpdateDialogOpen by arcadeViewModel.isUpdateDialogOpen.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    val audioPlayer = remember { AudioPlayer(context) }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            audioPlayer.stop()
-        }
+    val arcadeMusicManager = remember { ArcadeMusicManager(context.applicationContext) }
+    val appUpdateManager = remember {
+        AppUpdateManager(
+            context = context.applicationContext,
+            onPeriodicDataSync = { arcadeViewModel.refreshLeaderboards() }
+        )
     }
 
-    LaunchedEffect(generatedMusicBase64) {
-        generatedMusicBase64?.let { base64 ->
-            audioPlayer.playBase64Audio(base64)
+    // Re-attach Firestore release listener when Firebase connection state changes
+    LaunchedEffect(firestoreState) {
+        appUpdateManager.attachFirestoreReleaseListener()
+    }
+
+    // Sync active game ID with background music
+    LaunchedEffect(selectedGameId) {
+        arcadeMusicManager.playForGame(selectedGameId)
+    }
+
+    // Android Activity Lifecycle handling
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> arcadeMusicManager.pause()
+                Lifecycle.Event.ON_RESUME -> arcadeMusicManager.resume()
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            arcadeMusicManager.release()
+            appUpdateManager.release()
         }
     }
 
@@ -120,7 +154,11 @@ fun ArcadeApp(arcadeViewModel: ArcadeViewModel = viewModel()) {
         }
     }
 
-    CompositionLocalProvider(LocalLeaderboardController provides controller) {
+    CompositionLocalProvider(
+        LocalLeaderboardController provides controller,
+        LocalMusicManager provides arcadeMusicManager,
+        LocalAppUpdateManager provides appUpdateManager
+    ) {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
             if (isGlobalLeaderboardOpen && selectedGameId == null) {
                 GlobalLeaderboardScreen(
@@ -218,6 +256,14 @@ fun ArcadeApp(arcadeViewModel: ArcadeViewModel = viewModel()) {
                             onBack = { arcadeViewModel.selectGame(null) }
                         )
                     }
+                    "owen_tag" -> {
+                        val best = highScores["owen_tag"]?.highScore ?: 0
+                        OwenTagGame(
+                            highScore = best,
+                            onRecordScore = { arcadeViewModel.recordScore("owen_tag", it) },
+                            onBack = { arcadeViewModel.selectGame(null) }
+                        )
+                    }
                     else -> {
                         ArcadeHomeScreen(
                             highScores = highScores,
@@ -225,7 +271,10 @@ fun ArcadeApp(arcadeViewModel: ArcadeViewModel = viewModel()) {
                             onCategorySelected = { arcadeViewModel.setCategory(it) },
                             onGameSelected = { arcadeViewModel.selectGame(it) },
                             onPlayRandom = { arcadeViewModel.playRandomGame() },
-                            onGenerateMusic = { arcadeViewModel.generateHomeMusic() }
+                            onGenerateMusic = { arcadeViewModel.openMusicStudio(null) },
+                            musicManager = arcadeMusicManager,
+                            updateManager = appUpdateManager,
+                            onOpenUpdateCenter = { arcadeViewModel.setUpdateDialogOpen(true) }
                         )
                     }
                 }
@@ -233,6 +282,19 @@ fun ArcadeApp(arcadeViewModel: ArcadeViewModel = viewModel()) {
         }
 
         // Modal dialogs accessible from anywhere
+        AppUpdateDialog(
+            isOpen = isUpdateDialogOpen,
+            updateManager = appUpdateManager,
+            onDismiss = { arcadeViewModel.setUpdateDialogOpen(false) }
+        )
+
+        MusicGenerationDialog(
+            isOpen = isMusicStudioOpen,
+            musicManager = arcadeMusicManager,
+            initialTargetGameId = musicStudioTargetGameId ?: selectedGameId,
+            onDismiss = { arcadeViewModel.closeMusicStudio() }
+        )
+
         GameLeaderboardModalDialog(
             gameId = modalLeaderboardGameId,
             entries = modalLeaderboardGameId?.let { topScoresByGame[it] } ?: emptyList(),

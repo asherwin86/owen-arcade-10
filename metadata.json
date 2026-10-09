@@ -1,6 +1,6 @@
 {
   "name": "Arcade 10",
-  "description": "Collection of 10 classic retro and puzzle games: Snake, 2048, Minesweeper, Brick Breaker, Word Guess, Tic-Tac-Toe, Flappy Bird, Memory Cards, Connect Four, and Whack-a-Mole.",
+  "description": "Collection of retro, puzzle, and web arcade games: Snake, 2048, Minesweeper, Brick Breaker, Word Guess, Tic-Tac-Toe, Tap Flight, Memory Cards, Connect 4, Whack-a-Mole, and Owen's Tag (with Unity WebGL & Native Arena).",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

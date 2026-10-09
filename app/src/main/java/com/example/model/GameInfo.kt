@@ -119,6 +119,16 @@ object GameRegistry {
             iconEmoji = "🔨",
             accentColorHex = 0xFFD97706,
             scoreUnit = "pts"
+        ),
+        GameInfo(
+            id = "owen_tag",
+            title = "Owen's Tag",
+            subtitle = "WebGL & Arena Evasion",
+            description = "Dodge relentless AI taggers! Play the native mobile arena with stamina evasion or play the official Unity WebGL site directly inside the app.",
+            category = GameCategory.ARCADE,
+            iconEmoji = "🏃",
+            accentColorHex = 0xFFFF5722,
+            scoreUnit = "sec"
         )
     )
 

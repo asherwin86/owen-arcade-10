@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Arcade 10</string>
     <string name="leaderboard_title">Global Leaderboards</string>
-    <string name="leaderboard_subtitle">Top 10 High Scores • 10 Arcade Classics</string>
+    <string name="leaderboard_subtitle">Top 10 High Scores • Arcade Classics &amp; Web Games</string>
     <string name="firestore_connected">FIRESTORE LIVE</string>
     <string name="firestore_local_mode">LOCAL CACHE • SETUP CLOUD</string>
     <string name="callsign_label">CALLSIGN</string>

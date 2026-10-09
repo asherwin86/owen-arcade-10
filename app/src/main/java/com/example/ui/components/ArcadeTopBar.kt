@@ -17,6 +17,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeMute
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
@@ -26,6 +28,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.audio.LocalMusicManager
 import com.example.model.GameInfo
 import com.example.ui.LocalLeaderboardController
 import com.example.ui.theme.ArcadeTheme
@@ -96,12 +101,27 @@ fun ArcadeGameHeader(
                             color = MaterialTheme.colorScheme.onBackground
                         )
                     }
-                    Text(
-                        text = game.subtitle.uppercase(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color(game.accentColorHex),
-                        letterSpacing = 1.2.sp
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = game.subtitle.uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(game.accentColorHex),
+                            letterSpacing = 1.2.sp
+                        )
+                        val musicManager = LocalMusicManager.current
+                        if (musicManager != null) {
+                            val trackName = musicManager.getTrackTitleForGame(game.id)
+                            Text(
+                                text = "• 🎵 $trackName",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                color = colors.neonCyan.copy(alpha = 0.85f),
+                                maxLines = 1
+                            )
+                        }
+                    }
                 }
             }
 
@@ -170,6 +190,34 @@ fun ArcadeGameHeader(
                         tint = colors.scoreGold,
                         modifier = Modifier.size(18.dp)
                     )
+                }
+
+                val musicManager = LocalMusicManager.current
+                if (musicManager != null) {
+                    val isMuted by musicManager.isMuted.collectAsState()
+                    IconButton(
+                        onClick = {
+                            HapticHelper.playClick(context)
+                            musicManager.toggleMute()
+                        },
+                        modifier = Modifier
+                            .padding(end = 6.dp)
+                            .size(40.dp)
+                            .background(colors.surfaceCard, CircleShape)
+                            .border(
+                                1.dp,
+                                if (isMuted) Color(0xFFEF4444).copy(alpha = 0.6f) else colors.neonCyan.copy(alpha = 0.6f),
+                                CircleShape
+                            )
+                            .testTag("game_music_toggle_button")
+                    ) {
+                        Icon(
+                            imageVector = if (isMuted) Icons.AutoMirrored.Filled.VolumeMute else Icons.AutoMirrored.Filled.VolumeUp,
+                            contentDescription = if (isMuted) "Unmute BGM" else "Mute BGM",
+                            tint = if (isMuted) Color(0xFFEF4444) else colors.neonCyan,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
 
                 IconButton(

@@ -252,7 +252,7 @@ fun GlobalLeaderboardScreen(
                             )
                         }
                         Text(
-                            text = "$userTop10Count Top-10 entries across 10 games",
+                            text = "$userTop10Count Top-10 entries across ${GameRegistry.games.size} games",
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -274,7 +274,7 @@ fun GlobalLeaderboardScreen(
             }
         }
 
-        // Game Selector Carousel (All 10 Champions + 10 Individual Games)
+        // Game Selector Carousel (All Champions + Individual Games)
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -288,7 +288,7 @@ fun GlobalLeaderboardScreen(
                     },
                     label = {
                         Text(
-                            text = "👑 ALL 10 CHAMPIONS",
+                            text = "👑 ALL CHAMPIONS",
                             style = textStyles.hudLabel,
                             fontSize = 11.sp
                         )
@@ -706,7 +706,7 @@ private fun AllGamesChampionsList(
     ) {
         item {
             Text(
-                text = "ALL 10 GAMES • #1 GLOBAL RECORD HOLDERS",
+                text = "ALL ${GameRegistry.games.size} GAMES • #1 GLOBAL RECORD HOLDERS",
                 style = textStyles.hudLabel,
                 color = colors.scoreGold,
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
