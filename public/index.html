@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arcade 10</title>
+<style>
+  :root { --bg:#0e0b1f; --card:#1a1535; --card2:#241d4a; --accent:#ffd23f; --text:#f2f0ff; --muted:#a39fc4; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; background:radial-gradient(circle at top,#2a1f5c,var(--bg)) fixed;
+         color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; padding:16px; }
+  .wrap { max-width:560px; margin:0 auto; display:flex; flex-direction:column; gap:16px; }
+  section { background:var(--card); border-radius:20px; padding:24px 20px; text-align:center;
+            box-shadow:0 12px 40px rgba(0,0,0,.45); }
+  h1 { margin:0 0 6px; font-size:2.2rem; letter-spacing:.04em; color:var(--accent); }
+  h2 { margin:0 0 12px; font-size:1.2rem; }
+  p { color:var(--muted); line-height:1.5; margin:8px 0; }
+  .btn { display:inline-block; margin:12px 0 4px; padding:14px 28px; border-radius:12px; background:var(--accent);
+         color:#1a1535; font-weight:700; font-size:1.1rem; text-decoration:none; border:0; cursor:pointer; }
+  .btn:hover { filter:brightness(1.08); }
+  .meta { font-size:.85rem; }
+  .tabs { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:16px; }
+  .tab { background:var(--card2); color:var(--text); border:2px solid transparent; border-radius:999px;
+         padding:8px 14px; font-size:.9rem; cursor:pointer; text-decoration:none; font-family:inherit; }
+  .tab.active { border-color:var(--accent); color:var(--accent); }
+  #stage { display:flex; flex-direction:column; align-items:center; gap:10px; min-height:320px; }
+  .hud { display:flex; gap:20px; justify-content:center; color:var(--muted); }
+  .hud b { color:var(--text); }
+  .hint { font-size:.85rem; min-height:1.3em; }
+  button.small { background:var(--card2); color:var(--text); border:0; border-radius:8px; padding:8px 16px; cursor:pointer; }
+  canvas { border-radius:10px; max-width:100%; touch-action:none; outline:none; }
+  .pad { display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .pad button { width:48px; height:42px; margin:0 2px; background:var(--card2); color:var(--text); border:0; border-radius:8px; font-size:1rem; cursor:pointer; }
+  .ttt-board { display:grid; grid-template-columns:repeat(3,84px); gap:6px; }
+  .ttt-cell { height:84px; font-size:2.4rem; font-weight:700; background:var(--card2); color:var(--text); border:0; border-radius:10px; cursor:pointer; }
+  .ttt-cell.win { background:#3b7d4a; }
+  .mem-grid { display:grid; grid-template-columns:repeat(4,68px); gap:8px; }
+  .mem-card { height:68px; font-size:1.8rem; background:var(--card2); color:var(--muted); border:0; border-radius:10px; cursor:pointer; }
+  .mem-card.up { background:#3a2f7a; color:var(--text); }
+  .mem-card.done { background:#25563a; color:var(--text); }
+  .wk-grid { display:grid; grid-template-columns:repeat(3,84px); gap:8px; }
+  .wk-hole { height:84px; font-size:2.2rem; background:#2b1f12; border:0; border-radius:50%; cursor:pointer; }
+  .wk-hole.mole { background:#5b3d1e; }
+  ol { text-align:left; color:var(--muted); font-size:.9rem; line-height:1.6; margin:12px 0 0; padding-left:22px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section id="download">
+    <h1>Arcade 10</h1>
+    <p>Retro, puzzle and arcade games for Android.</p>
+    <a class="btn" href="/download/arcade-10.apk" download>&#11015; Download for Android</a>
+    <p class="meta" id="meta">Android app (.apk)</p>
+    <ol>
+      <li>Open this page on your Android phone and tap Download.</li>
+      <li>Open the downloaded file and allow "Install unknown apps" if asked.</li>
+      <li>Launch Arcade 10.</li>
+    </ol>
+  </section>
+
+  <section id="play">
+    <h2>Try a few games right here</h2>
+    <div class="tabs" id="tabs"></div>
+    <div id="stage"></div>
+    <p class="meta">The full app has 11 games, global leaderboards and haptics.</p>
+    <a class="btn" href="/download/arcade-10.apk" download>&#11015; Get the full app</a>
+  </section>
+</div>
+
+<script src="games/snake.js"></script>
+<script src="games/tictactoe.js"></script>
+<script src="games/memory.js"></script>
+<script src="games/whack.js"></script>
+<script>
+  var stage = document.getElementById('stage'), tabs = document.getElementById('tabs');
+  var destroy = null, buttons = {};
+
+  function select(game) {
+    if (destroy) destroy();
+    stage.innerHTML = '';
+    destroy = game.mount(stage);
+    Object.keys(buttons).forEach(function (id) { buttons[id].classList.toggle('active', id === game.id); });
+    try { localStorage.setItem('arcade10.game', game.id); } catch (e) {}
+  }
+
+  window.ArcadeGames.forEach(function (g) {
+    var b = document.createElement('button');
+    b.className = 'tab'; b.textContent = g.name;
+    b.addEventListener('click', function () { select(g); });
+    tabs.appendChild(b); buttons[g.id] = b;
+  });
+
+  // Owen's Tag lives on its own site, so its tab redirects there instead of mounting a game
+  var tag = document.createElement('a');
+  tag.className = 'tab'; tag.textContent = "Owen's Tag ↗";
+  tag.href = 'https://owen-tag-game.onrender.com/';
+  tabs.appendChild(tag);
+
+  var saved = null;
+  try { saved = localStorage.getItem('arcade10.game'); } catch (e) {}
+  select(window.ArcadeGames.filter(function (g) { return g.id === saved; })[0] || window.ArcadeGames[0]);
+
+  fetch('/api/app-info').then(function (r) { return r.ok ? r.json() : null; }).then(function (info) {
+    if (!info) return;
+    document.getElementById('meta').textContent =
+      'Android app (.apk) · ' + (info.sizeBytes / 1048576).toFixed(1) + ' MB · updated ' + new Date(info.updated).toLocaleDateString();
+  }).catch(function () {});
+</script>
+</body>
+</html>
