@@ -1,11 +1,6 @@
 # render.yaml
-# Note: This repository primarily contains a native Android application (APK).
-# Android apps are installed directly on Android devices and cannot be "hosted" 
-# or executed on Render like a web app.
-#
-# This file is provided in case you plan to add a backend API or web service 
-# (e.g., Node.js, Python, or Ktor for a global leaderboard) to this repository 
-# in the future.
+# Android apps can't run on Render, so this web service hosts the leaderboard API
+# plus a landing page (public/index.html) that serves the built APK from releases/.
 
 services:
   - type: web
