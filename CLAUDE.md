@@ -33,11 +33,12 @@ It listens on `PORT`, default 3000. If another program already holds port 3000 o
 Android (AGP 9.1.1, Kotlin 2.2.10, Gradle 9.3.1, Java 11 target):
 
 ```bash
-gradle :app:assembleDebug
+./gradlew :app:assembleDebug
 ```
 
-`gradlew` and the wrapper jar are not committed, only `gradle/wrapper/gradle-wrapper.properties`. Use a local
-Gradle install or Android Studio, or add the wrapper with `gradle wrapper`. The build needs the Android SDK.
+Use the committed wrapper (`gradlew`, `gradlew.bat`, `gradle/wrapper/gradle-wrapper.jar`). It downloads Gradle 9.3.1
+on first run. The build needs the Android SDK (`ANDROID_HOME` or `local.properties`), which is not installed in
+every environment, so it can fail on a machine without the SDK.
 
 ## Releasing a new APK
 
