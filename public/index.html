@@ -34,6 +34,11 @@
   .ttt-board { display:grid; grid-template-columns:repeat(3,84px); gap:6px; }
   .ttt-cell { height:84px; font-size:2.4rem; font-weight:700; background:var(--card2); color:var(--text); border:0; border-radius:10px; cursor:pointer; }
   .ttt-cell.win { background:#3b7d4a; }
+  .c4-board { display:grid; grid-template-columns:repeat(7,40px); gap:4px; padding:8px; background:#2f4fd0; border-radius:12px; }
+  .c4-cell { width:40px; height:40px; padding:0; border:0; border-radius:50%; background:var(--bg); cursor:pointer; }
+  .c4-cell.red { background:#e5484d; }
+  .c4-cell.yellow { background:var(--accent); }
+  .c4-cell.win { box-shadow:0 0 0 3px #fff; }
   .mem-grid { display:grid; grid-template-columns:repeat(4,68px); gap:8px; }
   .mem-card { height:68px; font-size:1.8rem; background:var(--card2); color:var(--muted); border:0; border-radius:10px; cursor:pointer; }
   .mem-card.up { background:#3a2f7a; color:var(--text); }
@@ -69,6 +74,7 @@
 
 <script src="games/snake.js"></script>
 <script src="games/tictactoe.js"></script>
+<script src="games/connect4.js"></script>
 <script src="games/memory.js"></script>
 <script src="games/whack.js"></script>
 <script>
